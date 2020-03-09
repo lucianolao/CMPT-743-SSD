@@ -2,8 +2,11 @@ import numpy as np
 import cv2
 from dataset import iou
 
+import matplotlib.pyplot as plt
+
 
 colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+# colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
 #use red green blue to represent different classes
 
 def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_box, image_, boxs_default):

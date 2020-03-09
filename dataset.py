@@ -12,6 +12,9 @@ import numpy as np
 import os
 import cv2
 
+import matplotlib.pyplot as plt
+import math
+
 #generate default bounding boxes
 # boxs_default = default_box_generator([10,5,3,1], [0.2,0.4,0.6,0.8], [0.1,0.3,0.5,0.7])
 def default_box_generator(layers, large_scale, small_scale):
@@ -33,16 +36,24 @@ def default_box_generator(layers, large_scale, small_scale):
     #for a cell in layer[i], you should use ssize=small_scale[i] and lsize=large_scale[i].
     #the last dimension 8 means each default bounding box has 8 attributes: [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
     
-    n_cells = sum(np.square(layers))
-    n_boxes_per_cell = len(layers)
+    
+    squared_layers = np.square(layers)
+    n_cells = sum(squared_layers)
+    n_boxes_per_cell = len(large_scale)
     box_num = n_cells*n_boxes_per_cell
     boxes3D = np.zeros((n_cells,n_boxes_per_cell,8)) # 135,4,8
     
+    repeated = []
+    for i in range(len(layers)):
+        repeated = np.concatenate((repeated,np.repeat(layers[i],squared_layers[i],axis=0)))
+    
     for i in range(n_cells):
+        size = repeated[i]
+        cellSize = 1/size
+        cellX = i % size
+        # cellY = i
         for j in range(n_boxes_per_cell):
-            size = layers[j]
-            for l in range(8):
-                a=1
+            boxes3D[i][j][0] = 0.5 / size
     
     boxes = boxes3D.reshape((box_num,8)) # 540,8
     return boxes
@@ -139,12 +150,62 @@ class COCO(torch.utils.data.Dataset):
         ann_confidence[:,-1] = 1 #the default class for all cells is set to "background"
         
         img_name = self.imgdir+self.img_names[index]
-        ann_name = self.anndir+self.img_names[index][:-3]+"txt"
+        if self.anndir != None:
+            ann_name = self.anndir+self.img_names[index][:-3]+"txt"
         
         #TODO:
         #1. prepare the image [3,320,320], by reading image "img_name" first.
+        # original = cv2.imread("data/train/images/00070.jpg")
+        original = cv2.imread(img_name)
+        # originalRGB = plt.imread(img_name)
+        shape = original.shape
+        # ratioHeight = self.image_size / shape[0]
+        # ratioWidth = self.image_size / shape[1]
+        # dim = (width, height)
+        dim = (self.image_size, self.image_size)
+        image = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
+        image = np.swapaxes(image,2,1)
+        image = np.swapaxes(image,1,0)
+        
+        
+        if self.anndir == None:
+            image = image/255.0
+            image = image.astype('float32')
+            return image, ann_box, ann_confidence, torch.Tensor(shape)
+        
         #2. prepare ann_box and ann_confidence, by reading txt file "ann_name" first.
+        # with open("data/train/annotations/00070.txt") as f:
+        with open(ann_name) as f:
+            content = f.read().splitlines()
+        
+        
         #3. use the above function "match" to update ann_box and ann_confidence, for each bounding box in "ann_name".
+        for i in range(0,len(content)):
+            obj = content[i].split(" ")
+            cat_id = int(obj[0])
+            # centerX = float(obj[1]) / shape[1]
+            # centerY = float(obj[2]) / shape[0]
+            # width = float(obj[3]) / shape[1]
+            # height = float(obj[4]) / shape[0]
+            
+            # x_min = centerX - width/2
+            # x_max = centerX + width/2
+            # y_min = centerY - height/2
+            # y_max = centerY + height/2
+            
+            
+            x_min = float(obj[1]) / shape[1]
+            y_min = float(obj[2]) / shape[0]
+            width = float(obj[3]) / shape[1]
+            height = float(obj[4]) / shape[0]
+            
+            x_max = x_min + width
+            y_max = y_min + height
+            
+
+            # match(ann_box,ann_confidence,cat_id,x_min,y_min,x_max,y_max)
+            match(ann_box,ann_confidence,self.boxs_default,self.threshold,cat_id,x_min,y_min,x_max,y_max)
+        
         #4. Data augmentation. You need to implement random cropping first. You can try adding other augmentations to get better results.
         
         #to use function "match":
@@ -154,6 +215,11 @@ class COCO(torch.utils.data.Dataset):
         #note: please make sure x_min,y_min,x_max,y_max are normalized with respect to the width or height of the image.
         #For example, point (x=100, y=200) in a image with (width=1000, height=500) will be normalized to (x/width=0.1,y/height=0.4)
         
+        image = image/255.0
+        image = image.astype('float32')
         
-        image=1      
-        return image, ann_box, ann_confidence
+        return image, ann_box, ann_confidence, torch.Tensor(shape)
+    
+    def plot(image):
+        plt.imshow(image)
+        plt.show()

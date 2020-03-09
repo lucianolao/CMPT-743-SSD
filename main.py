@@ -19,6 +19,9 @@ from dataset import *
 from model import *
 from utils import *
 
+import matplotlib.pyplot as plt
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--test', action='store_true')
 args = parser.parse_args()
