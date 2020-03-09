@@ -50,6 +50,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 #color = colors[j] #use red green blue to represent different classes
                 #thickness = 2
                 #cv2.rectangle(image?, start_point, end_point, color, thickness)
+                a=1
     
     #pred
     for i in range(len(pred_confidence)):
@@ -58,6 +59,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 #TODO:
                 #image3: draw network-predicted bounding boxes on image3
                 #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
+                a=1
     
     #combine four images into one
     h,w,_ = image1.shape
@@ -88,15 +90,6 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, thresh
     
     
     #TODO: non maximum suppression
-
-
-
-
-
-
-
-
-
-
+    return 1
 
 

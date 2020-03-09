@@ -36,6 +36,7 @@ def SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     #and reshape box to [batch_size*num_of_boxes, 4].
     #Then you need to figure out how you can get the indices of all cells carrying objects,
     #and use confidence[indices], box[indices] to select those cells.
+    return 1
 
 
 
@@ -64,6 +65,8 @@ class SSD(nn.Module):
         #confidence - [batch_size,4*(10*10+5*5+3*3+1*1),num_of_classes]
         #bboxes - [batch_size,4*(10*10+5*5+3*3+1*1),4]
         
+        confidence=1
+        bboxes=1
         return confidence,bboxes
 
 

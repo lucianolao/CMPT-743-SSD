@@ -13,6 +13,7 @@ import os
 import cv2
 
 #generate default bounding boxes
+# boxs_default = default_box_generator([10,5,3,1], [0.2,0.4,0.6,0.8], [0.1,0.3,0.5,0.7])
 def default_box_generator(layers, large_scale, small_scale):
     #input:
     #layers      -- a list of sizes of the output layers. in this assignment, it is set to [10,5,3,1].
@@ -32,6 +33,18 @@ def default_box_generator(layers, large_scale, small_scale):
     #for a cell in layer[i], you should use ssize=small_scale[i] and lsize=large_scale[i].
     #the last dimension 8 means each default bounding box has 8 attributes: [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
     
+    n_cells = sum(np.square(layers))
+    n_boxes_per_cell = len(layers)
+    box_num = n_cells*n_boxes_per_cell
+    boxes3D = np.zeros((n_cells,n_boxes_per_cell,8)) # 135,4,8
+    
+    for i in range(n_cells):
+        for j in range(n_boxes_per_cell):
+            size = layers[j]
+            for l in range(8):
+                a=1
+    
+    boxes = boxes3D.reshape((box_num,8)) # 540,8
     return boxes
 
 
@@ -92,7 +105,21 @@ class COCO(torch.utils.data.Dataset):
         self.box_num = len(self.boxs_default)
         
         self.img_names = os.listdir(self.imgdir)
+        self.img_names.sort()
         self.image_size = image_size
+        
+        PERCENT_FOR_TRAINING = 0.8
+        
+        total = len(self.img_names)
+        
+        partition = round(total * PERCENT_FOR_TRAINING)
+        
+        if self.train:
+            self.img_names = self.img_names[0:partition]
+            print("DATASET: split training")
+        else:
+            self.img_names = self.img_names[partition:total]
+            print("DATASET: split testing")
         
         #notice:
         #you can split the dataset into 80% training and 20% testing here, by slicing self.img_names with respect to self.train
@@ -128,4 +155,5 @@ class COCO(torch.utils.data.Dataset):
         #For example, point (x=100, y=200) in a image with (width=1000, height=500) will be normalized to (x/width=0.1,y/height=0.4)
         
         
+        image=1      
         return image, ann_box, ann_confidence
