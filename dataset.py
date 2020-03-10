@@ -37,23 +37,50 @@ def default_box_generator(layers, large_scale, small_scale):
     #the last dimension 8 means each default bounding box has 8 attributes: [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
     
     
-    squared_layers = np.square(layers)
-    n_cells = sum(squared_layers)
-    n_boxes_per_cell = len(large_scale)
-    box_num = n_cells*n_boxes_per_cell
-    boxes3D = np.zeros((n_cells,n_boxes_per_cell,8)) # 135,4,8
+    squared_layers = np.square(layers) # [100,25,9,1]
+    n_cells = sum(squared_layers) # 135
+    n_boxes_per_cell = len(layers) # 4
+    box_num = n_cells*n_boxes_per_cell # 540
+    boxes3D = np.zeros((n_cells,n_boxes_per_cell,8)) # (135,4,8)
     
-    repeated = []
+    repeated = [] # [100,100,100,100...25,25,25...9,9...1]
+    accumulation = [0]*4 # [0, 100, 125, 134]
+    summ=0
     for i in range(len(layers)):
         repeated = np.concatenate((repeated,np.repeat(layers[i],squared_layers[i],axis=0)))
+        accumulation[i] = summ
+        summ = summ + squared_layers[i]
     
     for i in range(n_cells):
-        size = repeated[i]
+        size = repeated[i] # 10 || 5 || 3 || 1
         cellSize = 1/size
-        cellX = i % size
-        # cellY = i
+        layer_index = layers.index(size)
+        relative_i = i - accumulation[layer_index]
+        cellX = relative_i % size
+        cellY = math.floor(relative_i / size)
         for j in range(n_boxes_per_cell):
-            boxes3D[i][j][0] = 0.5 / size
+            center_x = (cellX * cellSize) + cellSize/2
+            center_y = (cellY * cellSize) + cellSize/2
+            boxes3D[i][j][0] = center_x
+            boxes3D[i][j][1] = center_y
+            if j==0:
+                width = small_scale[layer_index]
+                height = width
+            elif j==1:
+                width = large_scale[layer_index]
+                height = width
+            elif j==2:
+                width = large_scale[layer_index] * math.sqrt(2)
+                height = large_scale[layer_index] / math.sqrt(2)
+            elif j==3:
+                width = large_scale[layer_index] / math.sqrt(2)
+                height = large_scale[layer_index] * math.sqrt(2)
+            boxes3D[i][j][2] = width
+            boxes3D[i][j][3] = height
+            boxes3D[i][j][4] = max(center_x - width/2, 0)    # x_min
+            boxes3D[i][j][5] = max(center_y - height/2, 0)    # y_min
+            boxes3D[i][j][6] = min(center_x + width/2, 1)    # x_max
+            boxes3D[i][j][7] = min(center_y + height/2, 1)    # y_max
     
     boxes = boxes3D.reshape((box_num,8)) # 540,8
     return boxes
