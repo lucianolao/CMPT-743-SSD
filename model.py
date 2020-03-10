@@ -39,6 +39,17 @@ def SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     return 1
 
 
+def conv_bat_re(cin, cout, ksize, s, p=1):
+    return nn.Sequential(
+        nn.Conv2d(cin, cout, kernel_size=ksize, stride=s, padding=p),
+        nn.BatchNorm2d(cout),
+        nn.ReLU(inplace=True)
+    )
+
+
+def permute(x):
+    x = x.permute(0,2,1)
+    return x
 
 
 class SSD(nn.Module):
@@ -49,13 +60,59 @@ class SSD(nn.Module):
         self.class_num = class_num #num_of_classes, in this assignment, 4: cat, dog, person, background
         
         #TODO: define layers
+        self.layer = nn.ModuleList()
+        
+        self.layer.append(conv_bat_re(3, 64, 3, 2))
+        
+        self.layer.append(conv_bat_re(64, 64, 3, 1))
+        self.layer.append(conv_bat_re(64, 64, 3, 1))
+        self.layer.append(conv_bat_re(64, 128, 3, 2))
+        
+        self.layer.append(conv_bat_re(128, 128, 3, 1))
+        self.layer.append(conv_bat_re(128, 128, 3, 1))
+        self.layer.append(conv_bat_re(128, 256, 3, 2))
+        
+        self.layer.append(conv_bat_re(256, 256, 3, 1))
+        self.layer.append(conv_bat_re(256, 256, 3, 1))
+        self.layer.append(conv_bat_re(256, 512, 3, 2))
+        
+        self.layer.append(conv_bat_re(512, 512, 3, 1))
+        self.layer.append(conv_bat_re(512, 512, 3, 1))
+        self.layer.append(conv_bat_re(512, 256, 3, 2))
+        
+        # 13 layers above
+        
+        self.layer.append(conv_bat_re(256, 256, 1, 1, 0))
+        self.layer.append(conv_bat_re(256, 256, 3, 2))
+        
+        # Different than YOLO from here
+        self.layer.append(conv_bat_re(256, 256, 1, 1, 0))
+        self.layer.append(conv_bat_re(256, 256, 3, 1, 0))
+        
+        self.layer.append(conv_bat_re(256, 256, 1, 1, 0))
+        self.layer.append(conv_bat_re(256, 256, 3, 1, 0))
+        
+        self.red4 = nn.Conv2d(256, 16, kernel_size=1, stride=1, padding=0)
+        self.blue4 = nn.Conv2d(256, 16, kernel_size=1, stride=1, padding=0)
+        
+        self.red1 = lastConvs(100)
+        self.blue1 = lastConvs(100)
+        
+        self.red2 = lastConvs(25)
+        self.blue2 = lastConvs(25)
+        
+        self.red3 = lastConvs(9)
+        self.blue3 = lastConvs(9)
+        
+        # self.box = boxPath()
+        # self.conf = confidencePath(class_num)
         
         
     def forward(self, x):
         #input:
         #x -- images, [batch_size, 3, 320, 320]
         
-        x = x/255.0 #normalize image. If you already normalized your input image in the dataloader, remove this line.
+        # x = x/255.0 #normalize image. If you already normalized your input image in the dataloader, remove this line.
         
         #TODO: define forward
         
@@ -65,13 +122,100 @@ class SSD(nn.Module):
         #confidence - [batch_size,4*(10*10+5*5+3*3+1*1),num_of_classes]
         #bboxes - [batch_size,4*(10*10+5*5+3*3+1*1),4]
         
-        confidence=1
-        bboxes=1
+        
+        for i in range(13): # 0-12
+            x = self.layer[i](x)
+        
+        red1 = self.red1(x)
+        blue1 = self.blue1(x)
+        
+        x = self.layer[13](x)
+        x = self.layer[14](x)
+        
+        red2 = self.red2(x)
+        blue2 = self.blue2(x)
+        
+        x = self.layer[15](x)
+        x = self.layer[16](x)
+        
+        red3 = self.red3(x)
+        blue3 = self.blue3(x)
+        
+        x = self.layer[17](x)
+        x = self.layer[18](x)
+        
+        red4 = self.red4(x)
+        red4 = red4.reshape(len(x),16,1)
+        blue4 = self.blue4(x)
+        blue4 = blue4.reshape(len(x),16,1)
+        
+        red = torch.cat([red1,red2,red3,red4],dim=2)
+        blue = torch.cat([blue1,blue2,blue3,blue4], dim=2)
+        
+        red = permute(red)
+        blue = permute(blue)
+        
+        red = red.reshape(len(x), 540, 4)
+        blue = blue.reshape(len(x), 540, self.class_num)
+        
+        bboxes = red
+        
+        blue = torch.softmax(blue,dim=2)
+        confidence = blue
+        
         return confidence,bboxes
 
+class lastConvs(nn.Module):
+    def __init__(self, newShape):
+        super(lastConvs, self).__init__()
+        self.conv = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1)
+        self.newShape = newShape
+        
+    def forward(self, x):
+        x = self.conv(x)
+        x = x.reshape(len(x),16,self.newShape)
+        return x
 
 
+# class confidencePath(nn.Module):
+#     def __init__(self, class_num):
+#         super(confidencePath, self).__init__()
+#         self.conv1 = nn.Conv2d(256, class_num, kernel_size=3, stride=1, padding=1)
 
+#     def forward(self, x):
+#         x = self.conv1(x)
+#         # x = F.softmax(x,dim=1)
+#         x = torch.softmax(x,dim=1)
+#         x = permute(x)
+#         return x
+
+
+# class boxPath(nn.Module):
+#     def __init__(self):
+#         super(boxPath, self).__init__()
+#         self.conv1 = nn.Conv2d(256, 4, kernel_size=3, stride=1, padding=1)
+
+#     def forward(self, x):
+#         x = self.conv1(x)
+#         # x = F.relu(x)
+#         x = permute(x)
+#         return x
+
+
+# class conv_bat_re(nn.Module):
+#     # def __init__(self, inC, outC):
+#     def __init__(self, cin, cout, ksize, s, p=1):
+#         super(conv_bat_re, self).__init__()
+#         self.conv1 = nn.Conv2d(cin, cout, kernel_size=ksize, stride=s, padding=p)
+#         self.batch = nn.BatchNorm2d(cout)
+#         self.relu = nn.ReLU(inplace=True)
+
+#     def forward(self, x):
+#         x = self.conv1(x)
+#         x = self.batch(x)
+#         x = self.relu(x)
+#         # x = F.relu(x)
+#         return x
 
 
 

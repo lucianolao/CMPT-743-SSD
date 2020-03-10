@@ -114,20 +114,49 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     #cat_id                  -- class id, 0-cat, 1-dog, 2-person
     #x_min,y_min,x_max,y_max -- bounding box
     
+    gw = x_max - x_min
+    gh = y_max - y_min
+    gx = x_min + gw/2
+    gy = y_min + gh/2
+    
     #compute iou between the default bounding boxes and the ground truth bounding box
     ious = iou(boxs_default, x_min,y_min,x_max,y_max)
     
     ious_true = ious>threshold
     #TODO:
+    # indices = (ious_true == True).nonzero()
+    indices = np.where(ious_true)
+    indices = indices[0]
+    if len(indices) == 0:
+        indices = [np.argmax(ious)]
+    for i in range(len(indices)):
+        px = boxs_default[indices[i]][0]
+        py = boxs_default[indices[i]][1]
+        pw = boxs_default[indices[i]][2]
+        ph = boxs_default[indices[i]][3]
+        
+        tx = (gx - px) / pw
+        ty = (gy - py) / ph
+        tw = math.log(gw/pw, 10)
+        th = math.log(gh/ph, 10)
+        
+        ann_box[indices[i]][0] = tx
+        ann_box[indices[i]][1] = ty
+        ann_box[indices[i]][2] = tw
+        ann_box[indices[i]][3] = th
+        
+        ann_confidence[indices[i]][cat_id] = 1
+        ann_confidence[indices[i]][-1] = 0
+        
     #update ann_box and ann_confidence, with respect to the ious and the default bounding boxes.
     #if a default bounding box and the ground truth bounding box have iou>threshold, then we will say this default bounding box is carrying an object.
     #this default bounding box will be used to update the corresponding entry in ann_box and ann_confidence
     
-    ious_true = np.argmax(ious)
+    # ious_true = np.argmax(ious)
     #TODO:
     #make sure at least one default bounding box is used
     #update ann_box and ann_confidence (do the same thing as above)
-
+    # a=1
 
 
 class COCO(torch.utils.data.Dataset):

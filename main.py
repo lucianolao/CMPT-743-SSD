@@ -84,9 +84,12 @@ if not args.test:
         avg_count = 0
         for i, data in enumerate(dataloader, 0):
             images_, ann_box_, ann_confidence_, shape = data
-            images = images_.cuda()
-            ann_box = ann_box_.cuda()
-            ann_confidence = ann_confidence_.cuda()
+            # images = images_.cuda()
+            # ann_box = ann_box_.cuda()
+            # ann_confidence = ann_confidence_.cuda()
+            images = images_.to(device)
+            ann_box = ann_box_.to(device)
+            ann_confidence = ann_confidence_.to(device)
 
             optimizer.zero_grad()
             pred_confidence, pred_box = network(images)
@@ -115,6 +118,8 @@ if not args.test:
             
             print('\rTraining: %d\t' % (i+1), end="")
             print(avg_loss / avg_count, end="")
+            
+            # createTxt(True,i,pred_confidence, pred_box, shape, batch_size)
 
         print('\r[%d] time: %f \ttrain loss: %f\t\t\t' % (epoch+1, time.time()-start_time, avg_loss/avg_count))
         
@@ -144,9 +149,12 @@ if not args.test:
     
     for i, data in enumerate(dataloader_test, 0):
         images_, ann_box_, ann_confidence_, shape = data
-        images = images_.cuda()
-        ann_box = ann_box_.cuda()
-        ann_confidence = ann_confidence_.cuda()
+        # images = images_.cuda()
+        # ann_box = ann_box_.cuda()
+        # ann_confidence = ann_confidence_.cuda()
+        images = images_.to(device)
+        ann_box = ann_box_.to(device)
+        ann_confidence = ann_confidence_.to(device)
 
         pred_confidence, pred_box = network(images)
         
@@ -194,9 +202,12 @@ else:
     
     for i, data in enumerate(dataloader_test, 0):
         images_, ann_box_, ann_confidence_, shape = data
-        images = images_.cuda()
-        ann_box = ann_box_.cuda()
-        ann_confidence = ann_confidence_.cuda()
+        # images = images_.cuda()
+        # ann_box = ann_box_.cuda()
+        # ann_confidence = ann_confidence_.cuda()
+        images = images_.to(device)
+        ann_box = ann_box_.to(device)
+        ann_confidence = ann_confidence_.to(device)
 
         pred_confidence, pred_box = network(images)
 
