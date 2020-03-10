@@ -125,8 +125,8 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     ious_true = ious>threshold
     #TODO:
     # indices = (ious_true == True).nonzero()
-    indices = np.where(ious_true)
-    indices = indices[0]
+    indices = np.where(ious_true)[0]
+    # indices = indices[0]
     if len(indices) == 0:
         indices = [np.argmax(ious)]
     for i in range(len(indices)):
