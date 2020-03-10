@@ -70,11 +70,11 @@ def default_box_generator(layers, large_scale, small_scale):
                 width = large_scale[layer_index]
                 height = width
             elif j==2:
-                width = large_scale[layer_index] * math.sqrt(2)
+                width = min(large_scale[layer_index] * math.sqrt(2), 1)
                 height = large_scale[layer_index] / math.sqrt(2)
             elif j==3:
                 width = large_scale[layer_index] / math.sqrt(2)
-                height = large_scale[layer_index] * math.sqrt(2)
+                height = min(large_scale[layer_index] * math.sqrt(2), 1)
             boxes3D[i][j][2] = width
             boxes3D[i][j][3] = height
             boxes3D[i][j][4] = max(center_x - width/2, 0)    # x_min
@@ -137,8 +137,8 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
         
         tx = (gx - px) / pw
         ty = (gy - py) / ph
-        tw = math.log(gw/pw, 10)
-        th = math.log(gh/ph, 10)
+        tw = math.log(gw/pw)
+        th = math.log(gh/ph)
         
         ann_box[indices[i]][0] = tx
         ann_box[indices[i]][1] = ty
@@ -147,6 +147,8 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
         
         ann_confidence[indices[i]][cat_id] = 1
         ann_confidence[indices[i]][-1] = 0
+    
+    # a=1
         
     #update ann_box and ann_confidence, with respect to the ious and the default bounding boxes.
     #if a default bounding box and the ground truth bounding box have iou>threshold, then we will say this default bounding box is carrying an object.

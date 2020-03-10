@@ -26,6 +26,40 @@ def SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     #output:
     #loss -- a single number for the value of the loss function, [1]
     
+    batch_size = ann_confidence.shape[0]
+    num_of_boxes = ann_confidence.shape[1]
+    num_of_classes = ann_confidence.shape[2]
+    
+    # Reshaping
+    pred_confidence = pred_confidence.reshape(batch_size*num_of_boxes, num_of_classes)
+    pred_box = pred_box.reshape(batch_size*num_of_boxes, 4)
+    ann_confidence = ann_confidence.reshape(batch_size*num_of_boxes, num_of_classes)
+    ann_box = ann_box.reshape(batch_size*num_of_boxes, 4)
+    
+    # Getting indices of boxes with objects
+    _, obj_detected = torch.max(ann_confidence, 1)
+    indices_filled = (obj_detected != 3).nonzero()
+    indices_empty = (obj_detected == 3).nonzero()
+    
+    # Removing second dimension of size 1
+    indices_filled = indices_filled.reshape(len(indices_filled))
+    indices_empty = indices_empty.reshape(len(indices_empty))
+    
+    # Boxes and Confidence carrying objects
+    pred_confidence_carrying = pred_confidence[indices_filled]
+    pred_box_carrying = pred_box[indices_filled]
+    ann_confidence_carrying = ann_confidence[indices_filled]
+    ann_box_carrying = ann_box[indices_filled]
+    
+    # Confidence without objects
+    pred_confidence_empty = pred_confidence[indices_empty]
+    ann_confidence_empty = ann_confidence[indices_empty]
+    
+    loss_cls = F.binary_cross_entropy(pred_confidence_carrying, ann_confidence_carrying)
+    loss_cls = loss_cls + 3*F.binary_cross_entropy(pred_confidence_empty, ann_confidence_empty)
+    loss_box = F.smooth_l1_loss(pred_box_carrying, ann_box_carrying)
+    loss = loss_cls + loss_box
+    
     #TODO: write a loss function for SSD
     #
     #For confidence (class labels), use cross entropy (F.binary_cross_entropy)
@@ -36,7 +70,7 @@ def SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     #and reshape box to [batch_size*num_of_boxes, 4].
     #Then you need to figure out how you can get the indices of all cells carrying objects,
     #and use confidence[indices], box[indices] to select those cells.
-    return 1
+    return loss
 
 
 def conv_bat_re(cin, cout, ksize, s, p=1):

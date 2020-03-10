@@ -3,6 +3,7 @@ import cv2
 from dataset import iou
 
 import matplotlib.pyplot as plt
+import math
 
 
 colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
@@ -24,7 +25,9 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     class_num = class_num-1
     #class_num = 3 now, because we do not need the last class (background)
     
+    image_ = (image_*255).astype(np.uint8)
     image = np.transpose(image_, (1,2,0)).astype(np.uint8)
+    shape = image.shape
     image1 = np.zeros(image.shape,np.uint8)
     image2 = np.zeros(image.shape,np.uint8)
     image3 = np.zeros(image.shape,np.uint8)
@@ -37,6 +40,8 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     #image2: draw ground truth "default" boxes on image2 (to show that you have assigned the object to the correct cell/cells)
     #image3: draw network-predicted bounding boxes on image3
     #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
+    
+    layers = [10,5,3,1]
     
     
     #draw ground truth
@@ -53,16 +58,20 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 #color = colors[j] #use red green blue to represent different classes
                 #thickness = 2
                 #cv2.rectangle(image?, start_point, end_point, color, thickness)
-                a=1
+                # image1, image2 = drawBox(ann_box, yind, xind, j, size, cellSize, shape, image1, image2)
+                image1, image2 = drawBox(ann_box, i, j, shape, image1, image2, boxs_default)
     
     #pred
+    # count = 0
     for i in range(len(pred_confidence)):
         for j in range(class_num):
             if pred_confidence[i,j]>0.5:
                 #TODO:
                 #image3: draw network-predicted bounding boxes on image3
                 #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
-                a=1
+                # image3, image4 = drawBox(pred_box, yind, xind, j, size, cellSize, shape, image3, image4)
+                # count = count+1
+                image3, image4 = drawBox(ann_box, i, j, shape, image3, image4, boxs_default)
     
     #combine four images into one
     h,w,_ = image1.shape
@@ -71,8 +80,10 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     image[:h,w:] = image2
     image[h:,:w] = image3
     image[h:,w:] = image4
-    cv2.imshow(windowname+" [[gt_box,gt_dft],[pd_box,pd_dft]]",image)
-    cv2.waitKey(1)
+    # cv2.imshow(windowname+" [[gt_box,gt_dft],[pd_box,pd_dft]]",image)
+    # cv2.waitKey(1)
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    plt.show()
     #if you are using a server, you may not be able to display the image.
     #in that case, please save the image using cv2.imwrite and check the saved image for visualization.
 
@@ -96,3 +107,92 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, thresh
     return 1
 
 
+def boxToImage(box, i, shape, boxs_default):
+    dx = box[i,0]
+    dy = box[i,1]
+    dw = box[i,2]
+    dh = box[i,3]
+    
+    px = boxs_default[i,0]
+    py = boxs_default[i,1]
+    pw = boxs_default[i,2]
+    ph = boxs_default[i,3]
+    
+    gx = pw * dx + px
+    gy = ph * dy + py
+    gw = pw * math.exp(dw)
+    gh = ph * math.exp(dh)
+    
+    centerX = gx * shape[1]
+    centerY = gy * shape[0]
+    width = gw * shape[1]
+    height = gh * shape[0]
+    
+    x1 = int(centerX - (width/2))
+    y1 = int(centerY - (height/2))
+    x2 = int(centerX + (width/2))
+    y2 = int(centerY + (height/2))
+    
+    return x1,y1,x2,y2,width,height
+
+
+def drawBox(box, i, j, shape, imageL, imageR, boxs_default):
+    
+    color = colors[j]
+    thickness = 2
+    
+    x1,y1,x2,y2,_,_ = boxToImage(box, i, shape, boxs_default)
+    
+    start_point = (x1, y1)
+    end_point = (x2, y2)
+    
+    imageL = cv2.rectangle(imageL, start_point, end_point, color, thickness)
+    
+    
+    x1 = int(boxs_default[i,4] * shape[1])
+    y1 = int(boxs_default[i,5] * shape[0])
+    x2 = int(boxs_default[i,6] * shape[1])
+    y2 = int(boxs_default[i,7] * shape[0])
+    
+    start_point = (x1, y1)
+    end_point = (x2, y2)
+    
+    imageR = cv2.rectangle(imageR, start_point, end_point, color, thickness)
+    
+    return imageL, imageR
+    
+    
+# def drawBox(box, yind, xind, j, size, cellSize, shape, imageL, imageR):
+#     cellX = xind
+#     cellY = yind
+    
+#     x1,y1,x2,y2,_,_ = boxToImage(box, yind, xind, cellSize, shape)
+    
+#     start_point = (x1, y1)
+#     end_point = (x2, y2)
+    
+#     color = colors[j]
+#     thickness = 2
+    
+#     imageL = cv2.rectangle(imageL, start_point, end_point, color, thickness)
+
+#     cell_length_x = int(shape[1] / size)
+#     cell_length_y = int(shape[0] / size)
+    
+#     cellX_position = int(cellX * cell_length_x)
+#     cellY_position = int(cellY * cell_length_y)
+    
+#     cellX_end = cellX_position + cell_length_x
+#     cellY_end = cellY_position + cell_length_y
+    
+#     start_point = (cellX_position, cellY_position)
+#     end_point = (cellX_end, cellY_end)
+    
+#     imageR = cv2.rectangle(imageR, start_point, end_point, color, thickness)
+    
+#     return imageL,imageR
+
+
+def plot(image):
+    plt.imshow(image)
+    plt.show()

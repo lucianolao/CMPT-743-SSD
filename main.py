@@ -104,10 +104,10 @@ if not args.test:
             # pred_box[0].permute(2,0,1)
             # images_[0].permute(1,2,0)
             
-            # IMAGE_INDEX = 0
-            # pred_confidence_ = pred_confidence[IMAGE_INDEX].detach().cpu().numpy()
-            # pred_box_ = pred_box[IMAGE_INDEX].detach().cpu().numpy()
-            # visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[IMAGE_INDEX].numpy(), ann_box_[IMAGE_INDEX].numpy(), images_[IMAGE_INDEX].numpy())
+            IMAGE_INDEX = 0
+            pred_confidence_ = pred_confidence[IMAGE_INDEX].detach().cpu().numpy()
+            pred_box_ = pred_box[IMAGE_INDEX].detach().cpu().numpy()
+            visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[IMAGE_INDEX].numpy(), ann_box_[IMAGE_INDEX].numpy(), images_[IMAGE_INDEX].numpy(), boxs_default)
             
             loss_net = SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box)
             loss_net.backward()
