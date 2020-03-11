@@ -104,11 +104,56 @@ def non_maximum_suppression(confidence, box, boxs_default, overlap=0.5, threshol
     #if you wish to reuse the visualize_pred function above, you need to return a "suppressed" version of confidence [5,5, num_of_classes].
     #you can also directly return the final bounding boxes and classes, and write a new visualization function for that.
     
-    # A = box.copy()
-    # B = np.zeros((A.shape))
-    
-    a = list(range(0, len(box)))
+    a, values = np.where(confidence[:,0:3] > 0.5)
     b = []
+    
+    checkCategory = np.argmax(confidence[a], axis=1)
+    
+    dx = box[:,0]
+    dy = box[:,1]
+    dw = box[:,2]
+    dh = box[:,3]
+    
+    px = boxs_default[:,0]
+    py = boxs_default[:,1]
+    pw = boxs_default[:,2]
+    ph = boxs_default[:,3]
+    
+    gx = pw * dx + px
+    gy = ph * dy + py
+    gw = pw * np.exp(dw)
+    gh = ph * np.exp(dh)
+    
+    # centerX = gx * shape[1]
+    # centerY = gy * shape[0]
+    # width = gw * shape[1]
+    # height = gh * shape[0]
+    
+    centerX = gx
+    centerY = gy
+    width = gw
+    height = gh
+    
+    # x1 = int(centerX - (width/2))
+    # y1 = int(centerY - (height/2))
+    # x2 = int(centerX + (width/2))
+    # y2 = int(centerY + (height/2))
+    
+    coords = np.zeros((len(box),4))
+    
+    for i in range(len(box)):
+        coords[i,0] = max(centerX[i] - (width[i]/2), 0) # x1
+        coords[i,1] = max(centerY[i] - (height[i]/2), 0) # y1
+        coords[i,2] = min(centerX[i] + (width[i]/2), 1) # x2
+        coords[i,3] = min(centerY[i] + (height[i]/2), 1) # y2
+    
+    
+    # coords[:,0] = max(centerX[:] - (width[:]/2), 0) # x1
+    # coords[:,1] = max(centerY - (height/2), 0) # y1
+    # coords[:,2] = min(centerX + (width/2), 1) # x2
+    # coords[:,3] = min(centerY + (height/2), 1) # y2
+    
+ 
     
     # indices_carrying, values_carrying = np.where(pred_confidence[i,:,0:3] > 0.5)
     
@@ -116,12 +161,14 @@ def non_maximum_suppression(confidence, box, boxs_default, overlap=0.5, threshol
     # indices_filled = (obj_detected != 3).nonzero()
     # indices_filled = indices_filled.reshape(len(indices_filled))
     
-    position = np.argmax(confidence[a,0:3])
     # indices_carrying, values_carrying = np.where(confidence[a,0:3] > 0.5)
+    position = np.argmax(confidence[a,0:3])
+    col = position % 3
+    row = math.floor(position/3)
     
-    while (position > threshold):
-        col = position % 3
-        row = math.floor(position/3)
+    while (confidence[row,col] > threshold):
+        # col = position % 3
+        # row = math.floor(position/3)
         
         category = col
         x = row
@@ -130,12 +177,26 @@ def non_maximum_suppression(confidence, box, boxs_default, overlap=0.5, threshol
         b.append(x)
         b.sort()
         
-        for element in a:
-            if confidence[element,category] > threshold:
-                x_min, y_min, x_max, y_max, _, _ = boxToImage(box[x], [1,1], boxs_default[x])
-                if iou(boxs_default, x_min,y_min,x_max,y_max) > overlap:
-                    # Remove x from from a
-                    a.remove(x)
+        x_min = coords[x,0]
+        y_min = coords[x,1]
+        x_max = coords[x,2]
+        y_max = coords[x,3]
+        a=1
+        
+        indices_carrying, values_carrying = np.where(confidence[a,category] > 0.5)
+        
+        
+        # for element in a:
+        #     if confidence[element,category] > threshold:
+        #         # x_min, y_min, x_max, y_max, _, _ = boxToImage(box[x], [1,1], boxs_default[x])
+        #         x_min = coords[x,0]
+        #         y_min = coords[x,1]
+        #         x_max = coords[x,2]
+        #         y_max = coords[x,3]
+        #         iou_result = iou(boxs_default[x], x_min,y_min,x_max,y_max)
+        #         if iou_result > overlap:
+        #             # Remove x from from a
+        #             a.remove(x)
         
         
     
