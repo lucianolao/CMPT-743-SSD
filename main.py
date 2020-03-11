@@ -56,7 +56,10 @@ else:
     print("CPU")
 
 
-CHECKPOINT = 'network.pth'
+epochs_saved = 0
+checkpointFilename = 'network'
+extension = '.pth'
+CHECKPOINT = checkpointFilename+str(epochs_saved)+extension
 RESULTS = "results/"
 
 FOLDER = 'train'
@@ -125,7 +128,7 @@ if not args.test:
             print(avg_loss / avg_count, end="")
             
             # createTxt(True,i,pred_confidence, pred_box, shape, batch_size, boxs_default)
-
+        
         print('\r[%d] time: %f \ttrain loss: %f\t\t\t' % (epoch+1, time.time()-start_time, avg_loss/avg_count))
         
         #visualize
@@ -139,7 +142,8 @@ if not args.test:
         if epoch%10==9:
             #save last network
             print('saving net...')
-            torch.save(network.state_dict(), CHECKPOINT)
+            # torch.save(network.state_dict(), CHECKPOINT)
+            torch.save(network.state_dict(), checkpointFilename + str(epochs_saved+epoch+1) + extension)
             for i in range(len(images_)):
                 callVisualize(i,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
     
