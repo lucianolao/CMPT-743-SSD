@@ -20,6 +20,7 @@ from model import *
 from utils import *
 
 import matplotlib.pyplot as plt
+import sys
 
 
 parser = argparse.ArgumentParser()
@@ -58,6 +59,8 @@ else:
 CHECKPOINT = 'network.pth'
 RESULTS = "results/"
 
+FOLDER = 'train'
+# FOLDER = 'test'
 
 # args.test = True
 if not args.test:
@@ -94,20 +97,22 @@ if not args.test:
             optimizer.zero_grad()
             pred_confidence, pred_box = network(images)
             
+            nms_confidence, nms_box = non_maximum_suppression(pred_confidence[0].detach().cpu().numpy(), pred_box[0].detach().cpu().numpy(), boxs_default)
+            
             #visualize
-            # callVisualize(0,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_)
+            callVisualize(0,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
             
             # for i in range(len(images_)):
-            #     callVisualize(i,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_)
+            #     callVisualize(i,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
             
             # pred_confidence[0].permute(2,0,1)
             # pred_box[0].permute(2,0,1)
             # images_[0].permute(1,2,0)
             
-            IMAGE_INDEX = 0
-            pred_confidence_ = pred_confidence[IMAGE_INDEX].detach().cpu().numpy()
-            pred_box_ = pred_box[IMAGE_INDEX].detach().cpu().numpy()
-            visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[IMAGE_INDEX].numpy(), ann_box_[IMAGE_INDEX].numpy(), images_[IMAGE_INDEX].numpy(), boxs_default)
+            # IMAGE_INDEX = 0
+            # pred_confidence_ = pred_confidence[IMAGE_INDEX].detach().cpu().numpy()
+            # pred_box_ = pred_box[IMAGE_INDEX].detach().cpu().numpy()
+            # visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[IMAGE_INDEX].numpy(), ann_box_[IMAGE_INDEX].numpy(), images_[IMAGE_INDEX].numpy(), boxs_default)
             
             loss_net = SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box)
             loss_net.backward()
@@ -119,15 +124,15 @@ if not args.test:
             print('\rTraining: %d\t' % (i+1), end="")
             print(avg_loss / avg_count, end="")
             
-            # createTxt(True,i,pred_confidence, pred_box, shape, batch_size)
+            # createTxt(True,i,pred_confidence, pred_box, shape, batch_size, boxs_default)
 
         print('\r[%d] time: %f \ttrain loss: %f\t\t\t' % (epoch+1, time.time()-start_time, avg_loss/avg_count))
         
         #visualize
-        pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
-        pred_box_ = pred_box[0].detach().cpu().numpy()
-        visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-        # callVisualize(0,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_)
+        # pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
+        # pred_box_ = pred_box[0].detach().cpu().numpy()
+        # visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+        callVisualize(0,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
         
         
         #save weights
@@ -135,8 +140,8 @@ if not args.test:
             #save last network
             print('saving net...')
             torch.save(network.state_dict(), CHECKPOINT)
-            # for i in range(len(images_)):
-            #     callVisualize(i,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_)
+            for i in range(len(images_)):
+                callVisualize(i,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
     
     
     #TRAINING FINISHED
@@ -167,10 +172,10 @@ if not args.test:
         print("\rTesting: %d\t\t\t" % (i+1), end='')
         
         #visualize
-        pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
-        pred_box_ = pred_box[0].detach().cpu().numpy()
-        visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-        # callVisualize(0,"test", pred_confidence, pred_box, ann_confidence_, ann_box_, images_)
+        # pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
+        # pred_box_ = pred_box[0].detach().cpu().numpy()
+        # visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+        callVisualize(0,"test", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
     
         #optional: compute F1
         #F1score = 2*precision*recall/np.maximum(precision+recall,1e-8)
@@ -179,18 +184,24 @@ if not args.test:
 
 else:
     #TEST
-    FOLDER = 'train'
-    # FOLDER = 'test'
+    
     test_batch_size = 1
-    # dataset_test = COCO("data/test/images/", "data/test/annotations/", class_num, train = False, image_size=320)
-    # dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, train = False, image_size=320)
+    # dataset_test = COCO("data/test/images/", "data/test/annotations/", class_num, boxs_default, train = False, image_size=320)
+    # dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
     if FOLDER=='test':
-        dataset_test = COCO("data/"+FOLDER+"/images/", None, class_num, train = False, image_size=320)
+        dataset_test = COCO("data/"+FOLDER+"/images/", None, class_num, boxs_default, train = False, image_size=320)
     else:
-        dataset_test = COCO("data/"+FOLDER+"/images/", "data/"+FOLDER+"/annotations/", class_num, train = False, image_size=320)
+        dataset_test = COCO("data/"+FOLDER+"/images/", "data/"+FOLDER+"/annotations/", class_num, boxs_default, train = False, image_size=320)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=test_batch_size, shuffle=False, num_workers=0)
     # network.load_state_dict(torch.load(CHECKPOINT))
-    network.load_state_dict(torch.load(CHECKPOINT,map_location=torch.device(device)))
+    # network.load_state_dict(torch.load(CHECKPOINT,map_location=torch.device(device)))
+    if os.path.exists(CHECKPOINT):
+        network.load_state_dict(torch.load(CHECKPOINT,map_location=torch.device(device)))
+        print("Loaded model to resume training")
+    else:
+        print("No saved checkpoint for testing")
+        sys.exit()
+    
     network.eval()
     
     print("TESTING")
@@ -208,23 +219,27 @@ else:
         images = images_.to(device)
         ann_box = ann_box_.to(device)
         ann_confidence = ann_confidence_.to(device)
-
+        
         pred_confidence, pred_box = network(images)
-
+        
         # pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
         # pred_box_ = pred_box[0].detach().cpu().numpy()
         
-        #pred_confidence_,pred_box_ = non_maximum_suppression(pred_confidence_,pred_box_,boxs_default)
-        
-        # createTxt(False,i,pred_confidence, pred_box, shape, test_batch_size)
+        # pred_confidence_,pred_box_ = non_maximum_suppression(pred_confidence_,pred_box_,boxs_default)
+        nms_confidence, nms_box = non_maximum_suppression(pred_confidence[0].detach().cpu().numpy(), pred_box[0].detach().cpu().numpy(), boxs_default)
         
         #TODO: save predicted bounding boxes and classes to a txt file.
         #you will need to submit those files for grading this assignment
         
+        if FOLDER=='test':
+            createTxt(False,i,pred_confidence, pred_box, shape, test_batch_size, boxs_default)
+        else:
+            createTxt(True,i,pred_confidence, pred_box, shape, test_batch_size, boxs_default)
+        
         # visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         # cv2.waitKey(1000)
         
-        # callVisualize(0,"test", pred_confidence, pred_box, ann_confidence_, ann_box_, images_,save=True,directory=RESULTS+str(i))
+        callVisualize(0, FOLDER, pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i))
         
         print('\rTesting: %d\t' % (i), end="")
 

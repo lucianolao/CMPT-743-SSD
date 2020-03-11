@@ -4,6 +4,8 @@ from dataset import iou
 
 import matplotlib.pyplot as plt
 import math
+import os
+import torch
 
 
 colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
@@ -82,11 +84,11 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     image[h:,w:] = image4
     # cv2.imshow(windowname+" [[gt_box,gt_dft],[pd_box,pd_dft]]",image)
     # cv2.waitKey(1)
-    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    plt.show()
+    # plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    # plt.show()
     #if you are using a server, you may not be able to display the image.
     #in that case, please save the image using cv2.imwrite and check the saved image for visualization.
-
+    return image
 
 
 def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, threshold=0.5):
@@ -104,19 +106,19 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, thresh
     
     
     #TODO: non maximum suppression
-    return 1
+    return 1,1
 
 
-def boxToImage(box, i, shape, boxs_default):
-    dx = box[i,0]
-    dy = box[i,1]
-    dw = box[i,2]
-    dh = box[i,3]
+def boxToImage(box_row, shape, boxs_default_row):
+    dx = box_row[0]
+    dy = box_row[1]
+    dw = box_row[2]
+    dh = box_row[3]
     
-    px = boxs_default[i,0]
-    py = boxs_default[i,1]
-    pw = boxs_default[i,2]
-    ph = boxs_default[i,3]
+    px = boxs_default_row[0]
+    py = boxs_default_row[1]
+    pw = boxs_default_row[2]
+    ph = boxs_default_row[3]
     
     gx = pw * dx + px
     gy = ph * dy + py
@@ -141,7 +143,7 @@ def drawBox(box, i, j, shape, imageL, imageR, boxs_default):
     color = colors[j]
     thickness = 2
     
-    x1,y1,x2,y2,_,_ = boxToImage(box, i, shape, boxs_default)
+    x1,y1,x2,y2,_,_ = boxToImage(box[i], shape, boxs_default[i])
     
     start_point = (x1, y1)
     end_point = (x2, y2)
@@ -162,35 +164,72 @@ def drawBox(box, i, j, shape, imageL, imageR, boxs_default):
     return imageL, imageR
     
     
-# def drawBox(box, yind, xind, j, size, cellSize, shape, imageL, imageR):
-#     cellX = xind
-#     cellY = yind
-    
-#     x1,y1,x2,y2,_,_ = boxToImage(box, yind, xind, cellSize, shape)
-    
-#     start_point = (x1, y1)
-#     end_point = (x2, y2)
-    
-#     color = colors[j]
-#     thickness = 2
-    
-#     imageL = cv2.rectangle(imageL, start_point, end_point, color, thickness)
+def callVisualize(index,nameWindow, pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default, save=False,directory=""):
+    i = index
+    pred_confidence_ = pred_confidence[i].detach().cpu().numpy()
+    pred_box_ = pred_box[i].detach().cpu().numpy()
+    img_BGR = visualize_pred(nameWindow, pred_confidence_, pred_box_, ann_confidence_[i].numpy(), ann_box_[i].numpy(), images_[i].numpy(), boxs_default)
+    if save:
+        # img = cv2.cvtColor(img_BGR, cv2.COLOR_BGR2RGB)
+        cv2.imwrite(directory + ".jpeg", img_BGR)
+    else:
+        # cv2.imshow(nameWindow+" [[gt_box,gt_dft],[pd_box,pd_dft]]",img_BGR)
+        # cv2.waitKey(1000)
+        plt.imshow(cv2.cvtColor(img_BGR, cv2.COLOR_BGR2RGB))
+        plt.title(directory[8:])
+        # plt.axis('off')
+        # plt.savefig(directory + '.jpeg')
+        plt.show()
 
-#     cell_length_x = int(shape[1] / size)
-#     cell_length_y = int(shape[0] / size)
+
+def createTxt(isTraining, iteration, pred_confidence, pred_box, shape, batch_size, boxs_default):
+    if isTraining:
+        directory = "predicted_boxes/train/"
+    else:
+        directory = "predicted_boxes/test/"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     
-#     cellX_position = int(cellX * cell_length_x)
-#     cellY_position = int(cellY * cell_length_y)
+    # filename = os.path.join(directory, "%05d"%(index) + '.txt')
     
-#     cellX_end = cellX_position + cell_length_x
-#     cellY_end = cellY_position + cell_length_y
+    # size = 5
+    # cellSize = 1/size
+    current_batch_size = len(pred_box)
     
-#     start_point = (cellX_position, cellY_position)
-#     end_point = (cellX_end, cellY_end)
+    pred_box = pred_box.detach().cpu().numpy()
+    pred_confidence = pred_confidence.detach().cpu().numpy()
     
-#     imageR = cv2.rectangle(imageR, start_point, end_point, color, thickness)
-    
-#     return imageL,imageR
+    for i in range(current_batch_size):
+        imageID = iteration*batch_size + i
+        filename = os.path.join(directory, "%05d"%(imageID) + '.txt')
+        with open(filename,"w") as f:
+            # obj_detected = torch.argmax(pred_confidence[i],1)
+            # indices_filled = (obj_detected != 3).nonzero()
+            # indices_filled = indices_filled.reshape(len(indices_filled))
+            
+            # obj_detected = np.argmax(pred_confidence[i],1)
+            indices_carrying, values_carrying = np.where(pred_confidence[i,:,0:3] > 0.5)
+            # indices_filled = (values != 3).nonzero()
+            
+            number_objects = len(indices_carrying)
+            for j in range(number_objects):
+                # SORT HERE IF NEEDED
+                # coord = indices_filled[j][0],indices_filled[j][1]
+                # cat_id = int(obj_detected[coord])
+                # yind = coord[0]
+                # xind = coord[1]
+                index = indices_carrying[j]
+                cat_id = values_carrying[j]
+                x1,y1,_,_,width,height = boxToImage(pred_box[i,index], shape[i].numpy(), boxs_default[index])
+                # center_x = float(pred_box[j][coord][0])
+                # center_y = float(pred_box[j][coord][1])
+                # width = float(pred_box[j][coord][2])
+                # height = float(pred_box[j][coord][3])
+                # content = str(cat_id) +' '+ str(x_min) +' '+ str(y_min) +' '+ str(x_max) +' '+ str(y_max)
+                content = str(cat_id) +' '+ str('%.1f'%float(x1)) +' '+ str('%.1f'%float(y1)) +' '+ str('%.2f'%float(width)) +' '+ str('%.2f'%float(height)) + '\n'
+                f.write(content)
+    # print("what")
+    # print("ever")
 
 
 def plot(image):

@@ -129,24 +129,42 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     # indices = indices[0]
     if len(indices) == 0:
         indices = [np.argmax(ious)]
-    for i in range(len(indices)):
-        px = boxs_default[indices[i]][0]
-        py = boxs_default[indices[i]][1]
-        pw = boxs_default[indices[i]][2]
-        ph = boxs_default[indices[i]][3]
+    # for i in range(len(indices)):
+    #     px = boxs_default[indices[i]][0]
+    #     py = boxs_default[indices[i]][1]
+    #     pw = boxs_default[indices[i]][2]
+    #     ph = boxs_default[indices[i]][3]
         
-        tx = (gx - px) / pw
-        ty = (gy - py) / ph
-        tw = math.log(gw/pw)
-        th = math.log(gh/ph)
+    #     tx = (gx - px) / pw
+    #     ty = (gy - py) / ph
+    #     tw = math.log(gw/pw)
+    #     th = math.log(gh/ph)
         
-        ann_box[indices[i]][0] = tx
-        ann_box[indices[i]][1] = ty
-        ann_box[indices[i]][2] = tw
-        ann_box[indices[i]][3] = th
+    #     ann_box[indices[i]][0] = tx
+    #     ann_box[indices[i]][1] = ty
+    #     ann_box[indices[i]][2] = tw
+    #     ann_box[indices[i]][3] = th
         
-        ann_confidence[indices[i]][cat_id] = 1
-        ann_confidence[indices[i]][-1] = 0
+    #     ann_confidence[indices[i]][cat_id] = 1
+    #     ann_confidence[indices[i]][-1] = 0
+    
+    px = boxs_default[indices,0]
+    py = boxs_default[indices,1]
+    pw = boxs_default[indices,2]
+    ph = boxs_default[indices,3]
+    
+    tx = (gx - px) / pw
+    ty = (gy - py) / ph
+    tw = np.log(gw/pw)
+    th = np.log(gh/ph)
+    
+    ann_box[indices,0] = tx
+    ann_box[indices,1] = ty
+    ann_box[indices,2] = tw
+    ann_box[indices,3] = th
+    
+    ann_confidence[indices,cat_id] = 1
+    ann_confidence[indices,-1] = 0
     
     # a=1
         
@@ -158,7 +176,6 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     #TODO:
     #make sure at least one default bounding box is used
     #update ann_box and ann_confidence (do the same thing as above)
-    # a=1
 
 
 class COCO(torch.utils.data.Dataset):
