@@ -123,7 +123,9 @@ if not args.test:
             # pred_box_ = pred_box[IMAGE_INDEX].detach().cpu().numpy()
             # visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[IMAGE_INDEX].numpy(), ann_box_[IMAGE_INDEX].numpy(), images_[IMAGE_INDEX].numpy(), boxs_default)
             
+            # temp = time.time()
             loss_net = SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box)
+            # print(time.time()-temp)
             loss_net.backward()
             optimizer.step()
             

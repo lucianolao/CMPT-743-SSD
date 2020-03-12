@@ -77,7 +77,8 @@ def conv_bat_re(cin, cout, ksize, s, p=1):
     return nn.Sequential(
         nn.Conv2d(cin, cout, kernel_size=ksize, stride=s, padding=p),
         nn.BatchNorm2d(cout),
-        nn.ReLU(inplace=True)
+        # nn.ReLU(inplace=True)
+        nn.ReLU()
     )
 
 
