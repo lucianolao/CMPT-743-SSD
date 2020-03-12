@@ -56,7 +56,7 @@ else:
     print("CPU")
 
 
-epochs_saved = 0
+epochs_saved = 20
 checkpointFilename = 'network'
 extension = '.pth'
 CHECKPOINT = checkpointFilename+str(epochs_saved)+extension
@@ -83,7 +83,7 @@ if not args.test:
     
     if os.path.exists(CHECKPOINT):
         network.load_state_dict(torch.load(CHECKPOINT,map_location=torch.device(device)))
-        print("Loaded model to resume training")
+        print("Loaded model "+CHECKPOINT+" to resume training")
     
     for epoch in range(num_epochs):
         #TRAIN
@@ -137,7 +137,7 @@ if not args.test:
             
             # createTxt(True,i,pred_confidence, pred_box, shape, batch_size, boxs_default)
         
-        print('\r[%d] time: %f \ttrain loss: %f\t\t\t' % (epoch+1, time.time()-start_time, avg_loss/avg_count))
+        print('\r[%d] time: %f \ttrain loss: %f\t\t\t' % (epochs_saved+epoch+1, time.time()-start_time, avg_loss/avg_count))
         
         #visualize
         # pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
@@ -149,9 +149,9 @@ if not args.test:
         #save weights
         if epoch%10==9:
             #save last network
-            print('saving net...')
             # torch.save(network.state_dict(), CHECKPOINT)
             torch.save(network.state_dict(), checkpointFilename + str(epochs_saved+epoch+1) + extension)
+            print('saving net...')
             # for i in range(len(images_)):
             #     callVisualize(i,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
     
