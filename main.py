@@ -73,8 +73,8 @@ if not args.test:
     # dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
     
     
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0)
-    dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=False, num_workers=0)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
+    dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=True, num_workers=0)
     
     optimizer = optim.Adam(network.parameters(), lr = 1e-4)
     #feel free to try other optimizers and parameters.
@@ -99,7 +99,7 @@ if not args.test:
             images = images_.to(device)
             ann_box = ann_box_.to(device)
             ann_confidence = ann_confidence_.to(device)
-
+            
             optimizer.zero_grad()
             pred_confidence, pred_box = network(images)
             
