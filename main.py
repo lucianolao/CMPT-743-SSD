@@ -253,7 +253,7 @@ else:
         # cv2.waitKey(1000)
         
         # callVisualize(0, FOLDER, pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i))
-        callVisualize(0, FOLDER, nms_confidence, nms_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i))
+        callVisualize(0, FOLDER, nms_confidence, nms_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i)+'nms')
         
         print('\rTesting: %d\t' % (i), end="")
 
