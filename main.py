@@ -212,7 +212,7 @@ else:
     if os.path.exists(CHECKPOINT):
         # network.load_state_dict(torch.load(CHECKPOINT))
         network.load_state_dict(torch.load(CHECKPOINT,map_location=torch.device(device)))
-        print("Loaded model to resume training")
+        print("Loaded model "+CHECKPOINT+" for testing")
     else:
         print("No saved checkpoint for testing")
         sys.exit()

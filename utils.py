@@ -213,10 +213,11 @@ def non_maximum_suppression(confidence, box, boxs_default, overlap=0.5, threshol
         
         # indices_carrying, values_carrying = np.where(confidence[a,category] > 0.5)
         
-        indices_same_category = np.where(a_confidence[:,category] > threshold)[0]
+        # indices_to_check = np.where(a_confidence[:,category] > threshold)[0]
+        indices_to_check = np.where(a_confidence[:,0:3] > threshold)[0]
         
-        if len(indices_same_category) > 0:
-            iou_results = iou(boxs_default[indices_same_category], x_min,y_min,x_max,y_max)
+        if len(indices_to_check) > 0:
+            iou_results = iou(boxs_default[indices_to_check], x_min,y_min,x_max,y_max)
             if len(iou_results > 0):
                 iou_indices = np.where(iou_results > overlap)[0]
                 indices_to_delete = indices[iou_indices]
