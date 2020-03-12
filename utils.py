@@ -104,15 +104,31 @@ def non_maximum_suppression(confidence, box, boxs_default, overlap=0.5, threshol
     #if you wish to reuse the visualize_pred function above, you need to return a "suppressed" version of confidence [5,5, num_of_classes].
     #you can also directly return the final bounding boxes and classes, and write a new visualization function for that.
     
-    a, values = np.where(confidence[:,0:3] > 0.5)
-    b = []
+    N = len(boxs_default)
+    class_num = confidence.shape[1]
     
-    checkCategory = np.argmax(confidence[a], axis=1)
+    a_box = np.zeros([N,4], np.float32) #bounding boxes
+    a_confidence = np.zeros([N,class_num], np.float32) #one-hot vectors
+    a_confidence[:,-1] = 1 #the default class for all cells is set to "background"
     
-    dx = box[:,0]
-    dy = box[:,1]
-    dw = box[:,2]
-    dh = box[:,3]
+    b_box = np.zeros([N,4], np.float32) #bounding boxes
+    b_confidence = np.zeros([N,class_num], np.float32) #one-hot vectors
+    b_confidence[:,-1] = 1 #the default class for all cells is set to "background"
+    
+    indices, categories = np.where(confidence[:,0:3] > threshold)
+    
+    a_confidence[indices] = confidence[indices]
+    a_box[indices] = box[indices]
+    
+    # b_confidence = []
+    # b_box = []
+    
+    # checkCategory = np.argmax(confidence[a], axis=1)
+    
+    dx = a_box[:,0]
+    dy = a_box[:,1]
+    dw = a_box[:,2]
+    dh = a_box[:,3]
     
     px = boxs_default[:,0]
     py = boxs_default[:,1]
@@ -134,14 +150,15 @@ def non_maximum_suppression(confidence, box, boxs_default, overlap=0.5, threshol
     width = gw
     height = gh
     
-    # x1 = int(centerX - (width/2))
-    # y1 = int(centerY - (height/2))
-    # x2 = int(centerX + (width/2))
-    # y2 = int(centerY + (height/2))
+    # x1 = centerX - (width/2)
+    # y1 = centerY - (height/2)
+    # x2 = centerX + (width/2)
+    # y2 = centerY + (height/2)
     
-    coords = np.zeros((len(box),4))
+    coords = np.zeros((len(a_box),4))
     
-    for i in range(len(box)):
+    # for i in range(len(a_box)):
+    for i in indices:
         coords[i,0] = max(centerX[i] - (width[i]/2), 0) # x1
         coords[i,1] = max(centerY[i] - (height[i]/2), 0) # y1
         coords[i,2] = min(centerX[i] + (width[i]/2), 1) # x2
@@ -162,29 +179,49 @@ def non_maximum_suppression(confidence, box, boxs_default, overlap=0.5, threshol
     # indices_filled = indices_filled.reshape(len(indices_filled))
     
     # indices_carrying, values_carrying = np.where(confidence[a,0:3] > 0.5)
-    position = np.argmax(confidence[a,0:3])
-    col = position % 3
-    row = math.floor(position/3)
     
-    while (confidence[row,col] > threshold):
+    
+    # while (confidence[row,col] > threshold):
+    # while (a_confidence != None):
+    while (np.max(a_confidence[:,0:3]) > threshold):
+        position = np.argmax(a_confidence[:,0:3])
+        row, col = np.unravel_index(position, [N, 3])
         # col = position % 3
         # row = math.floor(position/3)
         
         category = col
         x = row
         
-        a.remove(x)
-        b.append(x)
-        b.sort()
+        # Copy A to B
+        # b_confidence.append(a_confidence[x])
+        # b_box.append(a_box[x])
+        b_confidence[x,:] = a_confidence[x,:]
+        b_box[x,:] = a_box[x,:]
+        
+        # Remove from A
+        # a_box.remove(x)
+        # a_confidence = np.delete(a_confidence, x, axis=0)
+        # a_box = np.delete(a_box, x, axis=0)
+        a_confidence[x,:] = [0,0,0,1]
+        a_box[x,:] = [0,0,0,0]
+        
         
         x_min = coords[x,0]
         y_min = coords[x,1]
         x_max = coords[x,2]
         y_max = coords[x,3]
-        a=1
         
-        indices_carrying, values_carrying = np.where(confidence[a,category] > 0.5)
+        # indices_carrying, values_carrying = np.where(confidence[a,category] > 0.5)
         
+        indices_same_category = np.where(a_confidence[:,category] > threshold)[0]
+        
+        if len(indices_same_category) > 0:
+            iou_results = iou(boxs_default[indices_same_category], x_min,y_min,x_max,y_max)
+            if len(iou_results > 0):
+                iou_indices = np.where(iou_results > overlap)[0]
+                indices_to_delete = indices[iou_indices]
+                a_confidence[indices_to_delete,:] = [0,0,0,1]
+                a_box[indices_to_delete,:] = [0,0,0,0]
         
         # for element in a:
         #     if confidence[element,category] > threshold:
@@ -206,7 +243,7 @@ def non_maximum_suppression(confidence, box, boxs_default, overlap=0.5, threshol
     
     
     #TODO: non maximum suppression
-    return 1,1
+    return b_confidence, b_box
 
 
 def boxToImage(box_row, shape, boxs_default_row):
@@ -264,11 +301,19 @@ def drawBox(box, i, j, shape, imageL, imageR, boxs_default):
     return imageL, imageR
     
     
-def callVisualize(index,nameWindow, pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default, save=False,directory=""):
+def callVisualize(index,nameWindow, pred_confidence, pred_box, ann_confidence, ann_box, images, boxs_default, save=False,directory=""):
     i = index
-    pred_confidence_ = pred_confidence[i].detach().cpu().numpy()
-    pred_box_ = pred_box[i].detach().cpu().numpy()
-    img_BGR = visualize_pred(nameWindow, pred_confidence_, pred_box_, ann_confidence_[i].numpy(), ann_box_[i].numpy(), images_[i].numpy(), boxs_default)
+    if torch.is_tensor(pred_confidence):
+        pred_confidence = pred_confidence[i].detach().cpu().numpy()
+    if torch.is_tensor(pred_box):
+        pred_box = pred_box[i].detach().cpu().numpy()
+    if torch.is_tensor(ann_confidence):
+        ann_confidence = ann_confidence[i].detach().cpu().numpy()
+    if torch.is_tensor(ann_box):
+        ann_box = ann_box[i].detach().cpu().numpy()
+    if torch.is_tensor(images):
+        images = images[i].detach().cpu().numpy()
+    img_BGR = visualize_pred(nameWindow, pred_confidence, pred_box, ann_confidence, ann_box, images, boxs_default)
     if save:
         # img = cv2.cvtColor(img_BGR, cv2.COLOR_BGR2RGB)
         cv2.imwrite(directory + ".jpeg", img_BGR)

@@ -67,8 +67,11 @@ FOLDER = 'train'
 
 # args.test = True
 if not args.test:
-    dataset = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = True, image_size=320)
-    dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
+    dataset = COCO("/scratch/lao/data/train/images/", "/scratch/lao/data/train/annotations/", class_num, boxs_default, train = True, image_size=320)
+    dataset_test = COCO("/scratch/lao/data/train/images/", "/scratch/lao/data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
+    # dataset = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = True, image_size=320)
+    # dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
+    
     
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=False, num_workers=0)
@@ -104,6 +107,7 @@ if not args.test:
             
             #visualize
             callVisualize(0,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
+            callVisualize(0,"train", nms_confidence, nms_box, ann_confidence_, ann_box_, images_, boxs_default)
             
             # for i in range(len(images_)):
             #     callVisualize(i,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
@@ -190,16 +194,19 @@ else:
     #TEST
     
     test_batch_size = 1
-    # dataset_test = COCO("data/test/images/", "data/test/annotations/", class_num, boxs_default, train = False, image_size=320)
-    # dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
+    
     if FOLDER=='test':
-        dataset_test = COCO("data/"+FOLDER+"/images/", None, class_num, boxs_default, train = False, image_size=320)
+        dataset_test = COCO("/scratch/lao/data/"+FOLDER+"/images/", None, class_num, boxs_default, train = False, image_size=320)
+        # dataset_test = COCO("data/"+FOLDER+"/images/", None, class_num, boxs_default, train = False, image_size=320)
     else:
-        dataset_test = COCO("data/"+FOLDER+"/images/", "data/"+FOLDER+"/annotations/", class_num, boxs_default, train = False, image_size=320)
+        dataset_test = COCO("/scratch/lao/data/"+FOLDER+"/images/", "data/"+FOLDER+"/annotations/", class_num, boxs_default, train = False, image_size=320)
+        # dataset_test = COCO("data/"+FOLDER+"/images/", "data/"+FOLDER+"/annotations/", class_num, boxs_default, train = False, image_size=320)
+    
+    
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=test_batch_size, shuffle=False, num_workers=0)
-    # network.load_state_dict(torch.load(CHECKPOINT))
-    # network.load_state_dict(torch.load(CHECKPOINT,map_location=torch.device(device)))
+    
     if os.path.exists(CHECKPOINT):
+        # network.load_state_dict(torch.load(CHECKPOINT))
         network.load_state_dict(torch.load(CHECKPOINT,map_location=torch.device(device)))
         print("Loaded model to resume training")
     else:
@@ -236,14 +243,17 @@ else:
         #you will need to submit those files for grading this assignment
         
         if FOLDER=='test':
-            createTxt(False,i,pred_confidence, pred_box, shape, test_batch_size, boxs_default)
+            # createTxt(False,i,pred_confidence, pred_box, shape, test_batch_size, boxs_default)
+            createTxt(False,i,nms_confidence, nms_box, shape, test_batch_size, boxs_default)
         else:
-            createTxt(True,i,pred_confidence, pred_box, shape, test_batch_size, boxs_default)
+            # createTxt(True,i,pred_confidence, pred_box, shape, test_batch_size, boxs_default)
+            createTxt(True,i,nms_confidence, nms_box, shape, test_batch_size, boxs_default)
         
         # visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         # cv2.waitKey(1000)
         
-        callVisualize(0, FOLDER, pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i))
+        # callVisualize(0, FOLDER, pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i))
+        callVisualize(0, FOLDER, nms_confidence, nms_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i))
         
         print('\rTesting: %d\t' % (i), end="")
 
