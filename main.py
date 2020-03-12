@@ -103,11 +103,13 @@ if not args.test:
             optimizer.zero_grad()
             pred_confidence, pred_box = network(images)
             
-            nms_confidence, nms_box = non_maximum_suppression(pred_confidence[0].detach().cpu().numpy(), pred_box[0].detach().cpu().numpy(), boxs_default)
+            # nms_confidence, nms_box = non_maximum_suppression(pred_confidence[0].detach().cpu().numpy(), pred_box[0].detach().cpu().numpy(), boxs_default)
             
             #visualize
-            callVisualize(0,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
-            callVisualize(0,"train", nms_confidence, nms_box, ann_confidence_, ann_box_, images_, boxs_default)
+            # callVisualize(0,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
+            # callVisualize(1,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
+            
+            # callVisualize(0,"train", nms_confidence, nms_box, ann_confidence_, ann_box_, images_, boxs_default)
             
             # for i in range(len(images_)):
             #     callVisualize(i,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
@@ -128,8 +130,8 @@ if not args.test:
             avg_loss += loss_net.data
             avg_count += 1
             
-            print('\rTraining: %d\t' % (i+1), end="")
-            print(avg_loss / avg_count, end="")
+            # print('\rTraining: %d\t' % (i+1), end="")
+            # print(avg_loss / avg_count, end="")
             
             # createTxt(True,i,pred_confidence, pred_box, shape, batch_size, boxs_default)
         
@@ -148,8 +150,8 @@ if not args.test:
             print('saving net...')
             # torch.save(network.state_dict(), CHECKPOINT)
             torch.save(network.state_dict(), checkpointFilename + str(epochs_saved+epoch+1) + extension)
-            for i in range(len(images_)):
-                callVisualize(i,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
+            # for i in range(len(images_)):
+            #     callVisualize(i,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
     
     
     #TRAINING FINISHED
@@ -252,7 +254,7 @@ else:
         # visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         # cv2.waitKey(1000)
         
-        # callVisualize(0, FOLDER, pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i))
+        callVisualize(0, FOLDER, pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i))
         callVisualize(0, FOLDER, nms_confidence, nms_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i)+'nms')
         
         print('\rTesting: %d\t' % (i), end="")

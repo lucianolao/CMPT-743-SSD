@@ -14,6 +14,7 @@ import cv2
 
 import matplotlib.pyplot as plt
 import math
+from random import randint
 
 #generate default bounding boxes
 # boxs_default = default_box_generator([10,5,3,1], [0.2,0.4,0.6,0.8], [0.1,0.3,0.5,0.7])
@@ -177,6 +178,11 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     #make sure at least one default bounding box is used
     #update ann_box and ann_confidence (do the same thing as above)
 
+def plot(image):
+    # plt.imshow(image)
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    plt.show()
+
 
 class COCO(torch.utils.data.Dataset):
     def __init__(self, imgdir, anndir, class_num, boxs_default, train = True, image_size=320):
@@ -194,26 +200,30 @@ class COCO(torch.utils.data.Dataset):
         self.img_names.sort()
         self.image_size = image_size
         
-        PERCENT_FOR_TRAINING = 0.8
+        # PERCENT_FOR_TRAINING = 0.8
         
-        total = len(self.img_names)
+        # total = len(self.img_names)
         
-        partition = round(total * PERCENT_FOR_TRAINING)
+        # partition = round(total * PERCENT_FOR_TRAINING)
         
-        if self.train:
-            self.img_names = self.img_names[0:partition]
-            print("DATASET: split training")
-        else:
-            self.img_names = self.img_names[partition:total]
-            print("DATASET: split testing")
+        # if self.train:
+        #     self.img_names = self.img_names[0:partition]
+        #     print("DATASET: split training")
+        # else:
+        #     self.img_names = self.img_names[partition:total]
+        #     print("DATASET: split testing")
         
         #notice:
         #you can split the dataset into 80% training and 20% testing here, by slicing self.img_names with respect to self.train
 
     def __len__(self):
-        return len(self.img_names)
+        if self.train:
+            return len(self.img_names)*2
+        else:
+            return len(self.img_names)
 
     def __getitem__(self, index):
+        # print(self.__len__())
         ann_box = np.zeros([self.box_num,4], np.float32) #bounding boxes
         ann_confidence = np.zeros([self.box_num,self.class_num], np.float32) #one-hot vectors
         #one-hot vectors with four classes
@@ -224,9 +234,16 @@ class COCO(torch.utils.data.Dataset):
         
         ann_confidence[:,-1] = 1 #the default class for all cells is set to "background"
         
-        img_name = self.imgdir+self.img_names[index]
+        # Fixing index for double the images
+        if index % 2 == 1:
+            i = index-1
+        else:
+            i = index
+        i = int(i/2)
+        
+        img_name = self.imgdir+self.img_names[i]
         if self.anndir != None:
-            ann_name = self.anndir+self.img_names[index][:-3]+"txt"
+            ann_name = self.anndir+self.img_names[i][:-3]+"txt"
         
         #TODO:
         #1. prepare the image [3,320,320], by reading image "img_name" first.
@@ -238,15 +255,19 @@ class COCO(torch.utils.data.Dataset):
         # ratioWidth = self.image_size / shape[1]
         # dim = (width, height)
         dim = (self.image_size, self.image_size)
-        image = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
-        image = np.swapaxes(image,2,1)
-        image = np.swapaxes(image,1,0)
+        # image = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
+        # image = np.swapaxes(image,2,1)
+        # image = np.swapaxes(image,1,0)
         
         
         if self.anndir == None:
+            image = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
+            image = np.swapaxes(image,2,1)
+            image = np.swapaxes(image,1,0)
             image = image/255.0
             image = image.astype('float32')
             return image, ann_box, ann_confidence, torch.Tensor(shape)
+        
         
         #2. prepare ann_box and ann_confidence, by reading txt file "ann_name" first.
         # with open("data/train/annotations/00070.txt") as f:
@@ -254,7 +275,12 @@ class COCO(torch.utils.data.Dataset):
             content = f.read().splitlines()
         
         
-        #3. use the above function "match" to update ann_box and ann_confidence, for each bounding box in "ann_name".
+        x_min = np.zeros(len(content))
+        y_min = np.zeros(len(content))
+        x_max = np.zeros(len(content))
+        y_max = np.zeros(len(content))
+        
+        
         for i in range(0,len(content)):
             obj = content[i].split(" ")
             cat_id = int(obj[0])
@@ -269,19 +295,89 @@ class COCO(torch.utils.data.Dataset):
             # y_max = centerY + height/2
             
             
-            x_min = float(obj[1]) / shape[1]
-            y_min = float(obj[2]) / shape[0]
-            width = float(obj[3]) / shape[1]
-            height = float(obj[4]) / shape[0]
+            x_min[i] = float(obj[1])
+            y_min[i] = float(obj[2])
+            width = float(obj[3])
+            height = float(obj[4])
             
-            x_max = x_min + width
-            y_max = y_min + height
+            x_max[i] = x_min[i] + width
+            y_max[i] = y_min[i] + height
             
 
             # match(ann_box,ann_confidence,cat_id,x_min,y_min,x_max,y_max)
-            match(ann_box,ann_confidence,self.boxs_default,self.threshold,cat_id,x_min,y_min,x_max,y_max)
+            # match(ann_box,ann_confidence,self.boxs_default,self.threshold,cat_id,x_min,y_min,x_max,y_max)
+        
+        # image = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
+        # image = np.swapaxes(image,2,1)
+        # image = np.swapaxes(image,1,0)
         
         #4. Data augmentation. You need to implement random cropping first. You can try adding other augmentations to get better results.
+        if self.train:
+            if index % 2 == 1:
+                # RANDOM CROPPING
+                x_minimum = min(x_min)
+                x_maximum = max(x_max)
+                y_minimum = min(y_min)
+                y_maximum = max(y_max)
+                
+                cropping_left = randint(0, math.floor(x_minimum))
+                cropping_right = randint(math.ceil(x_maximum), shape[1])
+                cropping_top = randint(0, math.floor(y_minimum))
+                cropping_bottom = randint(math.ceil(y_maximum), shape[0])
+                
+                # newDimensionX = cropping_right - cropping_left
+                # newDimensionY = cropping_bottom - cropping_top
+                # cropped_image = np.zeros((newDimensionY, newDimensionX, 3))
+                
+                cropped_image = original[cropping_top:cropping_bottom, cropping_left:cropping_right]
+                
+                # Updating boxes
+                range_left = cropping_left
+                range_right = shape[1] - cropping_right
+                range_top = cropping_top
+                range_bottom = shape[0] - cropping_bottom
+                x_min = x_min - range_left
+                x_max = x_max - range_left
+                y_min = y_min - range_top
+                y_max = y_max - range_top
+                
+                shape = cropped_image.shape
+                
+                
+                # FLIPPING IMAGES HORIZONTALLY
+                flipped_image = np.flip(cropped_image, axis=1)
+                # newDimensionY, newDimensionX, _ = flipped_image.shape
+                save_x_min = x_min
+                x_min = shape[1] - x_max
+                x_max = shape[1] - save_x_min
+                
+                # FINAL SETTINGS FOR AUGMENTATION
+                augmented = flipped_image
+                # shape = augmented.shape
+                
+                image = cv2.resize(augmented, dim, interpolation = cv2.INTER_AREA)
+                image = np.swapaxes(image,2,1)
+                image = np.swapaxes(image,1,0)
+            else:
+                # NO AUGMENTATION
+                image = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
+                image = np.swapaxes(image,2,1)
+                image = np.swapaxes(image,1,0)
+        else:
+            # TESTING
+            image = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
+            image = np.swapaxes(image,2,1)
+            image = np.swapaxes(image,1,0)
+        
+        
+        #3. use the above function "match" to update ann_box and ann_confidence, for each bounding box in "ann_name".
+        for i in range(0,len(content)):
+            x_min[i] = x_min[i] / shape[1]
+            y_min[i] = y_min[i] / shape[0]
+            x_max[i] = x_max[i] / shape[1]
+            y_max[i] = y_max[i] / shape[0]
+            match(ann_box,ann_confidence,self.boxs_default,self.threshold,cat_id,x_min[i],y_min[i],x_max[i],y_max[i])
+            
         
         #to use function "match":
         #match(ann_box,ann_confidence,self.boxs_default,self.threshold,class_id,x_min,y_min,x_max,y_max)
@@ -290,11 +386,10 @@ class COCO(torch.utils.data.Dataset):
         #note: please make sure x_min,y_min,x_max,y_max are normalized with respect to the width or height of the image.
         #For example, point (x=100, y=200) in a image with (width=1000, height=500) will be normalized to (x/width=0.1,y/height=0.4)
         
+        # Normalizing images
         image = image/255.0
         image = image.astype('float32')
         
         return image, ann_box, ann_confidence, torch.Tensor(shape)
     
-    def plot(image):
-        plt.imshow(image)
-        plt.show()
+
