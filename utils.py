@@ -91,7 +91,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     return image
 
 
-def non_maximum_suppression(confidence, box, boxs_default, overlap=0.5, threshold=0.5):
+def non_maximum_suppression(confidence, box, boxs_default, overlap=0.3, threshold=0.5):
     #input:
     #confidence_  -- the predicted class labels from SSD, [num_of_boxes, num_of_classes]
     #box_         -- the predicted bounding boxes from SSD, [num_of_boxes, 4]

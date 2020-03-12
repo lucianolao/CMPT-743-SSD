@@ -34,7 +34,7 @@ args = parser.parse_args()
 
 class_num = 4 #cat dog person background
 
-num_epochs = 100
+num_epochs = 30
 batch_size = 32
 
 
@@ -56,7 +56,7 @@ else:
     print("CPU")
 
 
-epochs_saved = 20
+epochs_saved = 120
 checkpointFilename = 'network'
 extension = '.pth'
 CHECKPOINT = checkpointFilename+str(epochs_saved)+extension
@@ -156,42 +156,42 @@ if not args.test:
             #     callVisualize(i,"train", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
     
     
-    #TRAINING FINISHED
+    # #TRAINING FINISHED
             
-    #TEST
-    network.eval()
+    # #TEST
+    # network.eval()
     
-    # TODO: split the dataset into 80% training and 20% testing
-    # use the training set to train and the testing set to evaluate
+    # # TODO: split the dataset into 80% training and 20% testing
+    # # use the training set to train and the testing set to evaluate
     
-    for i, data in enumerate(dataloader_test, 0):
-        images_, ann_box_, ann_confidence_, shape = data
-        # images = images_.cuda()
-        # ann_box = ann_box_.cuda()
-        # ann_confidence = ann_confidence_.cuda()
-        images = images_.to(device)
-        ann_box = ann_box_.to(device)
-        ann_confidence = ann_confidence_.to(device)
+    # for i, data in enumerate(dataloader_test, 0):
+    #     images_, ann_box_, ann_confidence_, shape = data
+    #     # images = images_.cuda()
+    #     # ann_box = ann_box_.cuda()
+    #     # ann_confidence = ann_confidence_.cuda()
+    #     images = images_.to(device)
+    #     ann_box = ann_box_.to(device)
+    #     ann_confidence = ann_confidence_.to(device)
 
-        pred_confidence, pred_box = network(images)
+    #     pred_confidence, pred_box = network(images)
         
-        pred_confidence_ = pred_confidence.detach().cpu().numpy()
-        pred_box_ = pred_box.detach().cpu().numpy()
+    #     pred_confidence_ = pred_confidence.detach().cpu().numpy()
+    #     pred_box_ = pred_box.detach().cpu().numpy()
         
-        #optional: implement a function to accumulate precision and recall to compute mAP or F1.
-        #update_precision_recall(pred_confidence_, pred_box_, ann_confidence_.numpy(), ann_box_.numpy(), boxs_default,precision_,recall_,thres)
+    #     #optional: implement a function to accumulate precision and recall to compute mAP or F1.
+    #     #update_precision_recall(pred_confidence_, pred_box_, ann_confidence_.numpy(), ann_box_.numpy(), boxs_default,precision_,recall_,thres)
         
-        print("\rTesting: %d\t\t\t" % (i+1), end='')
+    #     print("\rTesting: %d\t\t\t" % (i+1), end='')
         
-        #visualize
-        # pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
-        # pred_box_ = pred_box[0].detach().cpu().numpy()
-        # visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-        callVisualize(0,"test", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
+    #     #visualize
+    #     # pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
+    #     # pred_box_ = pred_box[0].detach().cpu().numpy()
+    #     # visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+    #     callVisualize(0,"test", pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default)
     
-        #optional: compute F1
-        #F1score = 2*precision*recall/np.maximum(precision+recall,1e-8)
-        #print(F1score)
+    #     #optional: compute F1
+    #     #F1score = 2*precision*recall/np.maximum(precision+recall,1e-8)
+    #     #print(F1score)
 
 
 else:
@@ -203,7 +203,7 @@ else:
         dataset_test = COCO("/scratch/lao/data/"+FOLDER+"/images/", None, class_num, boxs_default, train = False, image_size=320)
         # dataset_test = COCO("data/"+FOLDER+"/images/", None, class_num, boxs_default, train = False, image_size=320)
     else:
-        dataset_test = COCO("/scratch/lao/data/"+FOLDER+"/images/", "data/"+FOLDER+"/annotations/", class_num, boxs_default, train = False, image_size=320)
+        dataset_test = COCO("/scratch/lao/data/"+FOLDER+"/images/", "/scratch/lao/data/"+FOLDER+"/annotations/", class_num, boxs_default, train = False, image_size=320)
         # dataset_test = COCO("data/"+FOLDER+"/images/", "data/"+FOLDER+"/annotations/", class_num, boxs_default, train = False, image_size=320)
     
     
