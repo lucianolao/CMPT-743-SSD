@@ -237,11 +237,7 @@ def non_maximum_suppression(confidence, box, boxs_default, overlap=0.3, threshol
         #             a.remove(x)
         
         
-    
-    
-    
-    
-    
+
     
     #TODO: non maximum suppression
     return b_confidence, b_box
@@ -338,10 +334,20 @@ def createTxt(isTraining, iteration, pred_confidence, pred_box, shape, batch_siz
     
     # filename = os.path.join(directory, "%05d"%(index) + '.txt')
     
-    current_batch_size = len(pred_box)
     
-    pred_box = pred_box.detach().cpu().numpy()
-    pred_confidence = pred_confidence.detach().cpu().numpy()
+    
+    if torch.is_tensor(pred_box):
+        pred_box = pred_box.detach().cpu().numpy()
+    if torch.is_tensor(pred_confidence):
+        pred_confidence = pred_confidence.detach().cpu().numpy()
+        
+    if pred_box.ndim == 2:
+        pred_box = np.reshape(pred_box, (batch_size, pred_box.shape[0], pred_box.shape[1]))
+    
+    if pred_confidence.ndim == 2:
+        pred_confidence = np.reshape(pred_confidence, (batch_size, pred_confidence.shape[0], pred_confidence.shape[1]))
+    
+    current_batch_size = len(pred_box)
     
     for i in range(current_batch_size):
         imageID = iteration*batch_size + i

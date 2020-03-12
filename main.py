@@ -56,16 +56,16 @@ else:
     print("CPU")
 
 
-epochs_saved = 120
+epochs_saved = 150
 checkpointFilename = 'network'
 extension = '.pth'
 CHECKPOINT = checkpointFilename+str(epochs_saved)+extension
 RESULTS = "results/"
 
-FOLDER = 'train'
-# FOLDER = 'test'
+# FOLDER = 'train'
+FOLDER = 'test'
 
-# args.test = True
+args.test = True
 if not args.test:
     dataset = COCO("/scratch/lao/data/train/images/", "/scratch/lao/data/train/annotations/", class_num, boxs_default, train = True, image_size=320)
     dataset_test = COCO("/scratch/lao/data/train/images/", "/scratch/lao/data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
