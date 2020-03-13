@@ -200,18 +200,18 @@ class COCO(torch.utils.data.Dataset):
         self.img_names.sort()
         self.image_size = image_size
         
-        # PERCENT_FOR_TRAINING = 0.8
+        PERCENT_FOR_TRAINING = 0.8
         
-        # total = len(self.img_names)
+        total = len(self.img_names)
         
-        # partition = round(total * PERCENT_FOR_TRAINING)
+        partition = round(total * PERCENT_FOR_TRAINING)
         
-        # if self.train:
-        #     self.img_names = self.img_names[0:partition]
-        #     print("DATASET: split training")
-        # else:
-        #     self.img_names = self.img_names[partition:total]
-        #     print("DATASET: split testing")
+        if self.train:
+            self.img_names = self.img_names[0:partition]
+            print("DATASET: split training")
+        else:
+            self.img_names = self.img_names[partition:total]
+            print("DATASET: split testing")
         
         #notice:
         #you can split the dataset into 80% training and 20% testing here, by slicing self.img_names with respect to self.train
