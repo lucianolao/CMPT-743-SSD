@@ -91,7 +91,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     return image
 
 
-def non_maximum_suppression(confidence, box, boxs_default, overlap=0.3, threshold=0.5):
+def non_maximum_suppression(confidence, box, boxs_default, overlap=0.2, threshold=0.5):
     #input:
     #confidence_  -- the predicted class labels from SSD, [num_of_boxes, num_of_classes]
     #box_         -- the predicted bounding boxes from SSD, [num_of_boxes, 4]
@@ -125,10 +125,16 @@ def non_maximum_suppression(confidence, box, boxs_default, overlap=0.3, threshol
     
     # checkCategory = np.argmax(confidence[a], axis=1)
     
-    dx = a_box[:,0]
-    dy = a_box[:,1]
-    dw = a_box[:,2]
-    dh = a_box[:,3]
+    # dx = a_box[:,0]
+    # dy = a_box[:,1]
+    # dw = a_box[:,2]
+    # dh = a_box[:,3]
+    
+    
+    dx = box[:,0]
+    dy = box[:,1]
+    dw = box[:,2]
+    dh = box[:,3]
     
     px = boxs_default[:,0]
     py = boxs_default[:,1]
@@ -155,14 +161,23 @@ def non_maximum_suppression(confidence, box, boxs_default, overlap=0.3, threshol
     # x2 = centerX + (width/2)
     # y2 = centerY + (height/2)
     
-    coords = np.zeros((len(a_box),4))
+    coords = np.zeros((len(a_box),8))
     
     # for i in range(len(a_box)):
-    for i in indices:
-        coords[i,0] = max(centerX[i] - (width[i]/2), 0) # x1
-        coords[i,1] = max(centerY[i] - (height[i]/2), 0) # y1
-        coords[i,2] = min(centerX[i] + (width[i]/2), 1) # x2
-        coords[i,3] = min(centerY[i] + (height[i]/2), 1) # y2
+    for i in range(len(boxs_default)):
+        # coords[i,0] = max(centerX[i] - (width[i]/2), 0) # x1
+        # coords[i,1] = max(centerY[i] - (height[i]/2), 0) # y1
+        # coords[i,2] = min(centerX[i] + (width[i]/2), 1) # x2
+        # coords[i,3] = min(centerY[i] + (height[i]/2), 1) # y2
+        
+        coords[i,0] = centerX[i]
+        coords[i,1] = centerY[i]
+        coords[i,2] = width[i]
+        coords[i,3] = height[i]
+        coords[i,4] = centerX[i] - (width[i]/2) # x1
+        coords[i,5] = centerY[i] - (height[i]/2) # y1
+        coords[i,6] = centerX[i] + (width[i]/2) # x2
+        coords[i,7] = centerY[i] + (height[i]/2) # y2
     
     
     # coords[:,0] = max(centerX[:] - (width[:]/2), 0) # x1
@@ -206,23 +221,31 @@ def non_maximum_suppression(confidence, box, boxs_default, overlap=0.3, threshol
         a_box[x,:] = [0,0,0,0]
         
         
-        x_min = coords[x,0]
-        y_min = coords[x,1]
-        x_max = coords[x,2]
-        y_max = coords[x,3]
+        x_min = coords[x,4]
+        y_min = coords[x,5]
+        x_max = coords[x,6]
+        y_max = coords[x,7]
         
         # indices_carrying, values_carrying = np.where(confidence[a,category] > 0.5)
         
         # indices_to_check = np.where(a_confidence[:,category] > threshold)[0]
         indices_to_check = np.where(a_confidence[:,0:3] > threshold)[0]
         
-        if len(indices_to_check) > 0:
-            iou_results = iou(boxs_default[indices_to_check], x_min,y_min,x_max,y_max)
-            if len(iou_results > 0):
-                iou_indices = np.where(iou_results > overlap)[0]
-                indices_to_delete = indices[iou_indices]
-                a_confidence[indices_to_delete,:] = [0,0,0,1]
-                a_box[indices_to_delete,:] = [0,0,0,0]
+        # if len(indices_to_check) > 0:
+        #     # iou_results = iou(boxs_default[indices_to_check], x_min,y_min,x_max,y_max)
+        #     iou_results = iou(coords[indices_to_check], x_min,y_min,x_max,y_max)
+        #     if len(iou_results > 0):
+        #         iou_indices = np.where(iou_results > overlap)[0]
+        #         indices_to_delete = indices_to_check[iou_indices]
+        #         a_confidence[indices_to_delete,:] = [0,0,0,1]
+        #         a_box[indices_to_delete,:] = [0,0,0,0]
+        
+        iou_results = iou(coords[indices_to_check], x_min,y_min,x_max,y_max)
+        iou_indices = np.where(iou_results > overlap)[0]
+        
+        indices_to_delete = indices_to_check[iou_indices]
+        a_confidence[indices_to_delete,:] = [0,0,0,1]
+        a_box[indices_to_delete,:] = [0,0,0,0]
         
         # for element in a:
         #     if confidence[element,category] > threshold:

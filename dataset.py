@@ -235,11 +235,14 @@ class COCO(torch.utils.data.Dataset):
         ann_confidence[:,-1] = 1 #the default class for all cells is set to "background"
         
         # Fixing index for double the images
-        if index % 2 == 1:
-            i = index-1
+        if self.train:
+            if index % 2 == 1:
+                i = index-1
+            else:
+                i = index
+            i = int(i/2)
         else:
             i = index
-        i = int(i/2)
         
         img_name = self.imgdir+self.img_names[i]
         if self.anndir != None:

@@ -34,7 +34,7 @@ args = parser.parse_args()
 
 class_num = 4 #cat dog person background
 
-num_epochs = 30
+num_epochs = 20
 batch_size = 32
 
 
@@ -56,7 +56,7 @@ else:
     print("CPU")
 
 
-epochs_saved = 150
+epochs_saved = 180
 checkpointFilename = 'network'
 extension = '.pth'
 CHECKPOINT = checkpointFilename+str(epochs_saved)+extension
@@ -65,7 +65,7 @@ RESULTS = "results/"
 # FOLDER = 'train'
 FOLDER = 'test'
 
-args.test = True
+# args.test = True
 if not args.test:
     dataset = COCO("/scratch/lao/data/train/images/", "/scratch/lao/data/train/annotations/", class_num, boxs_default, train = True, image_size=320)
     dataset_test = COCO("/scratch/lao/data/train/images/", "/scratch/lao/data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
@@ -246,17 +246,17 @@ else:
         #TODO: save predicted bounding boxes and classes to a txt file.
         #you will need to submit those files for grading this assignment
         
-        if FOLDER=='test':
-            # createTxt(False,i,pred_confidence, pred_box, shape, test_batch_size, boxs_default)
-            createTxt(False,i,nms_confidence, nms_box, shape, test_batch_size, boxs_default)
-        else:
-            # createTxt(True,i,pred_confidence, pred_box, shape, test_batch_size, boxs_default)
-            createTxt(True,i,nms_confidence, nms_box, shape, test_batch_size, boxs_default)
+        # if FOLDER=='test':
+        #     # createTxt(False,i,pred_confidence, pred_box, shape, test_batch_size, boxs_default)
+        #     createTxt(False,i,nms_confidence, nms_box, shape, test_batch_size, boxs_default)
+        # else:
+        #     # createTxt(True,i,pred_confidence, pred_box, shape, test_batch_size, boxs_default)
+        #     createTxt(True,i,nms_confidence, nms_box, shape, test_batch_size, boxs_default)
         
         # visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         # cv2.waitKey(1000)
         
-        callVisualize(0, FOLDER, pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i))
+        # callVisualize(0, FOLDER, pred_confidence, pred_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i))
         callVisualize(0, FOLDER, nms_confidence, nms_box, ann_confidence_, ann_box_, images_, boxs_default, save=True,directory=RESULTS+str(i)+'nms')
         
         print('\rTesting: %d\t' % (i), end="")
