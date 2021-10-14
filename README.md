@@ -1,3 +1,3 @@
-# CMPT-743-Ass2
+# CMPT-743-SSD
 
 ### Object Detection (SSD) - Single Shot MultiBox Detector
